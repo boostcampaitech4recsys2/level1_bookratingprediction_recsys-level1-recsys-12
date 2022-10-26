@@ -1,5 +1,6 @@
 # data folder
 data/
+!src/data
 
 # macOS + Windows
 .DS_Store
