@@ -9,11 +9,13 @@ import torch.optim as optim
 from ._models import _FactorizationMachineModel, _FieldAwareFactorizationMachineModel
 from ._models import rmse, RMSELoss
 
+import wandb
 
 class FactorizationMachineModel:
 
     def __init__(self, args, data):
         super().__init__()
+        self.wandb = args.wandb
 
         self.criterion = RMSELoss()
 
@@ -54,6 +56,8 @@ class FactorizationMachineModel:
                     total_loss = 0
 
             rmse_score = self.predict_train()
+            if self.wandb:
+                wandb.log({"RMSE": rmse_score})
             print('epoch:', epoch, 'validation: rmse:', rmse_score)
 
 
@@ -85,6 +89,7 @@ class FieldAwareFactorizationMachineModel:
 
     def __init__(self, args, data):
         super().__init__()
+        self.wandb = args.wandb
 
         self.criterion = RMSELoss()
 
@@ -123,6 +128,9 @@ class FieldAwareFactorizationMachineModel:
                     total_loss = 0
 
             rmse_score = self.predict_train()
+            
+            if self.wandb:
+                wandb.log({"RMSE": rmse_score})
             print('epoch:', epoch, 'validation: rmse:', rmse_score)
 
 

@@ -1,0 +1,21 @@
+{
+	"DATA_PATH": "data/",
+	"MODEL": "LGBM",
+	"DATA_SHUFFLE": true,
+	"TEST_SIZE": 0.3,
+	"SEED": 42,
+	"SUBMIT": true,
+	"wandb": false,
+	"BATCH_SIZE": 1024,
+	"EPOCHS": 10,
+	"LR": 0.001,
+	"WEIGHT_DECAY": 1e-06,
+	"DEVICE": "cuda",
+	"config": "lgbm",
+	"PARAMS": {
+		"boosting_type": "gbdt",
+		"num_tree": 50000,
+		"max_depth": 4,
+		"learning_rate": 0.01
+	}
+}

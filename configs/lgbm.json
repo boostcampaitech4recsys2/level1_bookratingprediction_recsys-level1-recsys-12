@@ -1,0 +1,10 @@
+{
+    "MODEL": "LGBM",
+    "TEST_SIZE": 0.3,
+    "PARAMS": {
+        "boosting_type": "gbdt",
+		"num_tree": 20000,
+		"max_depth": 4,
+		"learning_rate": 0.02
+    } 
+}

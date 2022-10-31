@@ -9,10 +9,13 @@ import torch.optim as optim
 from ._models import _NeuralCollaborativeFiltering, _WideAndDeepModel, _DeepCrossNetworkModel
 from ._models import rmse, RMSELoss
 
+import wandb
+
 class NeuralCollaborativeFiltering:
 
     def __init__(self, args, data):
         super().__init__()
+        self.wandb = args.wandb
 
         self.criterion = RMSELoss()
 
@@ -57,6 +60,8 @@ class NeuralCollaborativeFiltering:
                     total_loss = 0
 
             rmse_score = self.predict_train()
+            if self.wandb:
+                wandb.log({"RMSE": rmse_score})
             print('epoch:', epoch, 'validation: rmse:', rmse_score)
 
 
@@ -87,6 +92,7 @@ class WideAndDeepModel:
 
     def __init__(self, args, data):
         super().__init__()
+        self.wandb = args.wandb
 
         self.criterion = RMSELoss()
 
@@ -128,6 +134,8 @@ class WideAndDeepModel:
                     total_loss = 0
 
             rmse_score = self.predict_train()
+            if self.wandb:
+                wandb.log({"RMSE": rmse_score})
             print('epoch:', epoch, 'validation: rmse:', rmse_score)
 
 
@@ -158,6 +166,7 @@ class DeepCrossNetworkModel:
 
     def __init__(self, args, data):
         super().__init__()
+        self.wandb = args.wandb
 
         self.criterion = RMSELoss()
 
@@ -200,6 +209,8 @@ class DeepCrossNetworkModel:
                     total_loss = 0
 
             rmse_score = self.predict_train()
+            if self.wandb:
+                wandb.log({"RMSE": rmse_score})
             print('epoch:', epoch, 'validation: rmse:', rmse_score)
 
 

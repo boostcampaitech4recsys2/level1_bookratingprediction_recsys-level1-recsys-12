@@ -8,28 +8,28 @@ from torch.utils.data import TensorDataset, DataLoader, Dataset
 def dl_data_load(args):
 
     ######################## DATA LOAD
-    users = pd.read_csv(args.DATA_PATH + 'users.csv')
-    books = pd.read_csv(args.DATA_PATH + 'books.csv')
+    users = pd.read_csv(args.DATA_PATH + 'processed/users.csv')
+    books = pd.read_csv(args.DATA_PATH + 'processed/books.csv')
     train = pd.read_csv(args.DATA_PATH + 'train_ratings.csv')
-    test = pd.read_csv(args.DATA_PATH + 'test_ratings.csv')
-    sub = pd.read_csv(args.DATA_PATH + 'sample_submission.csv')
+    test  = pd.read_csv(args.DATA_PATH + 'test_ratings.csv')
+    sub   = pd.read_csv(args.DATA_PATH + 'sample_submission.csv')
 
-    ids = pd.concat([train['user_id'], sub['user_id']]).unique()
-    isbns = pd.concat([train['isbn'], sub['isbn']]).unique()
+    ids   = pd.concat([train['user_id'], sub['user_id']]).unique()
+    isbns = pd.concat([train['isbn'],    sub['isbn']]).unique()
 
-    idx2user = {idx:id for idx, id in enumerate(ids)}
+    idx2user = {idx:id   for idx, id   in enumerate(ids)}
     idx2isbn = {idx:isbn for idx, isbn in enumerate(isbns)}
 
-    user2idx = {id:idx for idx, id in idx2user.items()}
+    user2idx = {id:idx   for idx, id   in idx2user.items()}
     isbn2idx = {isbn:idx for idx, isbn in idx2isbn.items()}
 
     train['user_id'] = train['user_id'].map(user2idx)
-    sub['user_id'] = sub['user_id'].map(user2idx)
-    test['user_id'] = test['user_id'].map(user2idx)
+    sub['user_id']   = sub['user_id'].map(user2idx)
+    test['user_id']  = test['user_id'].map(user2idx)
 
     train['isbn'] = train['isbn'].map(isbn2idx)
-    sub['isbn'] = sub['isbn'].map(isbn2idx)
-    test['isbn'] = test['isbn'].map(isbn2idx)
+    sub['isbn']   = sub['isbn'].map(isbn2idx)
+    test['isbn']  = test['isbn'].map(isbn2idx)
 
     field_dims = np.array([len(user2idx), len(isbn2idx)], dtype=np.uint32)
 

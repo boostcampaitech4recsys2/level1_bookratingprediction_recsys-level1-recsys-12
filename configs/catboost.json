@@ -1,0 +1,9 @@
+{
+    "MODEL": "CatBoost",
+    "TEST_SIZE": 0.3,
+    "PARAMS": {
+        "n_estimators": 100000,
+        "max_depth": 3,
+        "learning_rate": 0.01
+    } 
+}

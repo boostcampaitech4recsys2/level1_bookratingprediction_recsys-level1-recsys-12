@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 
@@ -6,6 +7,7 @@ import argparse
 
 def main(args):
     file_list = sum(args.ENSEMBLE_FILES, [])
+    print(file_list)
     
     if len(file_list) < 2:
         raise ValueError("Ensemble할 Model을 적어도 2개 이상 입력해 주세요.")
@@ -28,6 +30,9 @@ def main(args):
     output = en.output_frame.copy()
     files_title = '-'.join(file_list)
 
+    vars(args)['RESULT_PATH'] += 'ensemble/'
+    if not os.path.isdir(args.RESULT_PATH):
+        os.mkdir(args.RESULT_PATH)
     output.to_csv(f'{args.RESULT_PATH}{files_title}-{strategy_title}.csv',index=False)
 
 if __name__ == "__main__":

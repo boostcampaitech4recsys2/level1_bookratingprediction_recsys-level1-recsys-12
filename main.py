@@ -1,6 +1,9 @@
 import time
 import argparse
 import pandas as pd
+import json
+from pathlib import Path
+import os
 
 from src import seed_everything
 
@@ -8,15 +11,24 @@ from src.data import context_data_load, context_data_split, context_data_loader
 from src.data import dl_data_load, dl_data_split, dl_data_loader
 from src.data import image_data_load, image_data_split, image_data_loader
 from src.data import text_data_load, text_data_split, text_data_loader
+from src.data import tabnet_data_load, tabnet_data_split, tabnet_data_loader
+from src.data import gbm_data_load, gbm_data_split, gbm_data_loader
 
 from src import FactorizationMachineModel, FieldAwareFactorizationMachineModel
 from src import NeuralCollaborativeFiltering, WideAndDeepModel, DeepCrossNetworkModel
 from src import CNN_FM
 from src import DeepCoNN
+from src import TabNet
+from src import LGBM, XGBoost, CatBoost
 
+import wandb
 
 def main(args):
     seed_everything(args.SEED)
+    
+    print(args)
+    if args.wandb:
+        wandb.init(project="book_rating", entity="yeonghoon")
 
     ######################## DATA LOAD
     print(f'--------------- {args.MODEL} Load Data ---------------')
@@ -30,6 +42,10 @@ def main(args):
         import nltk
         nltk.download('punkt')
         data = text_data_load(args)
+    elif args.MODEL == 'tabnet':
+        data = tabnet_data_load(args)
+    elif args.MODEL in ('LGBM', 'XGBoost', 'CatBoost'):
+        data = gbm_data_load(args)
     else:
         pass
 
@@ -50,6 +66,12 @@ def main(args):
     elif args.MODEL=='DeepCoNN':
         data = text_data_split(args, data)
         data = text_data_loader(args, data)
+    
+    elif args.MODEL == 'tabnet':
+        data = tabnet_data_split(args, data)
+        
+    elif args.MODEL in ('LGBM', 'XGBoost', 'CatBoost'):
+        data = gbm_data_split(args, data)
     else:
         pass
 
@@ -69,11 +91,21 @@ def main(args):
         model = CNN_FM(args, data)
     elif args.MODEL=='DeepCoNN':
         model = DeepCoNN(args, data)
+    elif args.MODEL=='tabnet':
+        model = TabNet(args, data)
+    elif args.MODEL=='LGBM':
+        model = LGBM(args, data)
+    elif args.MODEL=='XGBoost':
+        model = XGBoost(args, data)
+    elif args.MODEL=='CatBoost':
+        model = CatBoost(args, data)
     else:
         pass
 
     ######################## TRAIN
     print(f'--------------- {args.MODEL} TRAINING ---------------')
+    if args.wandb:
+        wandb.config.update(args)
     model.train()
 
     ######################## INFERENCE
@@ -84,23 +116,31 @@ def main(args):
         predicts  = model.predict(data['test_dataloader'])
     elif args.MODEL=='DeepCoNN':
         predicts  = model.predict(data['test_dataloader'])
+    elif args.MODEL=='tabnet':
+        predicts  = model.predict(data['test'].values)
+    elif args.MODEL in ('LGBM', 'XGBoost', 'CatBoost'):
+        predicts  = model.predict(data['test'])
     else:
         pass
 
     ######################## SAVE PREDICT
     print(f'--------------- SAVE {args.MODEL} PREDICT ---------------')
     submission = pd.read_csv(args.DATA_PATH + 'sample_submission.csv')
-    if args.MODEL in ('FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN'):
+    if args.MODEL in ('FM', 'FFM', 'NCF', 'WDN', 'DCN', 'CNN_FM', 'DeepCoNN', 'tabnet', 'LGBM', 'XGBoost', 'CatBoost'):
         submission['rating'] = predicts
     else:
         pass
 
-    now = time.localtime()
-    now_date = time.strftime('%Y%m%d', now)
-    now_hour = time.strftime('%X', now)
-    save_time = now_date + '_' + now_hour.replace(':', '')
-    submission.to_csv('submit/{}_{}.csv'.format(save_time, args.MODEL), index=False)
-
+    if args.SUBMIT:
+        now = time.localtime()
+        now_date = time.strftime('%Y%m%d', now)
+        now_hour = time.strftime('%X', now)
+        save_time = now_date + '_' + now_hour.replace(':', '')
+        submission.to_csv('submit/{}_{}.csv'.format(args.MODEL, save_time), index=False)
+        if not os.path.isdir('submit/configs/'):
+            os.mkdir('submit/configs/')
+        with open('submit/configs/{}_{}.json'.format(args.MODEL, save_time), 'w', encoding='utf-8') as make_file:
+            json.dump(vars(args), make_file, indent="\t")
 
 
 if __name__ == "__main__":
@@ -116,6 +156,8 @@ if __name__ == "__main__":
     arg('--DATA_SHUFFLE', type=bool, default=True, help='데이터 셔플 여부를 조정할 수 있습니다.')
     arg('--TEST_SIZE', type=float, default=0.2, help='Train/Valid split 비율을 조정할 수 있습니다.')
     arg('--SEED', type=int, default=42, help='seed 값을 조정할 수 있습니다.')
+    arg('-s', '--SUBMIT', type=bool, default=False, help='결과물을 저장합니다.')
+    arg('-w', '--wandb', type=bool, default=False, help='wandb를 사용해 기록합니다.')
     
     ############### TRAINING OPTION
     arg('--BATCH_SIZE', type=int, default=1024, help='Batch size를 조정할 수 있습니다.')
@@ -125,6 +167,20 @@ if __name__ == "__main__":
 
     ############### GPU
     arg('--DEVICE', type=str, default='cuda', choices=['cuda', 'cpu'], help='학습에 사용할 Device를 조정할 수 있습니다.')
+
+    ############### config
+    arg('-c', '--config', default=None, type=str, help='Use config.json')
+    
+    args = parser.parse_args()
+    if args.config:
+        path = Path('./configs/' + args.config + '.json')
+        with open(path) as json_file:
+            config = json.load(json_file)
+            args_dict = vars(args)
+            for key in config.keys():
+                args_dict[key] = config[key]
+        main(args)
+        exit()
 
     ############### FM
     arg('--FM_EMBED_DIM', type=int, default=16, help='FM에서 embedding시킬 차원을 조정할 수 있습니다.')

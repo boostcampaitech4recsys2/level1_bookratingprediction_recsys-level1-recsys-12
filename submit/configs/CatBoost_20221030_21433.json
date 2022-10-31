@@ -1,0 +1,20 @@
+{
+	"DATA_PATH": "data/",
+	"MODEL": "CatBoost",
+	"DATA_SHUFFLE": true,
+	"TEST_SIZE": 0.3,
+	"SEED": 42,
+	"SUBMIT": true,
+	"wandb": false,
+	"BATCH_SIZE": 1024,
+	"EPOCHS": 10,
+	"LR": 0.001,
+	"WEIGHT_DECAY": 1e-06,
+	"DEVICE": "cuda",
+	"config": "catboost",
+	"PARAMS": {
+		"n_estimators": 100000,
+		"max_depth": 3,
+		"learning_rate": 0.01
+	}
+}
