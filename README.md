@@ -1,4 +1,4 @@
-# level1_bookratingprediction_recsys-level1-recsys-12
+# Book Rating Prediction
 
 ## 🔎 Project Overview
 - 대회 내용 : Book Rating Prediction(사용자가 그동안 읽은 책에 부여한 평점 데이터를 사용해서 새로운 책을 추천했을 때 어느 정도의 평점을 부여할지 예측하는 문제)
