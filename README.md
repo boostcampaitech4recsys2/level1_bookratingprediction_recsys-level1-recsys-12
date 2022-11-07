@@ -9,6 +9,9 @@
 - books : 149,570개의 책(item)에 대한 정보를 담고 있는 메타데이터
 - train_ratings : 59,803명의 사용자(user)가 129,777개의 책(item)에 대해 남긴 306,795건의 평점(rating) 데이터
 
+## 📈 Model
+- CatBoost + LightGBM + Deep Learning model 앙상블(7:1:2)
+
 ## 🏆 Result
 - Public RMSE : 2.1286
 - Private RMSE : 2.1241
