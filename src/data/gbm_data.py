@@ -4,6 +4,9 @@ from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader, Dataset
+from sklearn.model_selection import StratifiedKFold , KFold
+from keybert import KeyBERT
+
 
 
 def process_gbm_data(users, books, ratings1, ratings2):
@@ -12,17 +15,17 @@ def process_gbm_data(users, books, ratings1, ratings2):
     books_cols = [
         'isbn', 'year_of_publication', 'publisher', 
         'category', 'category_high', 'language',
-        'book_author'
+        'book_author', 'summary'
     ]
     
     context_df = ratings.merge( users, on='user_id', how='left').merge(books[books_cols], on='isbn', how='left')
     train_df   = ratings1.merge(users, on='user_id', how='left').merge(books[books_cols], on='isbn', how='left')
     test_df    = ratings2.merge(users, on='user_id', how='left').merge(books[books_cols], on='isbn', how='left')
 
+    
     # normalize age
     for df in [train_df, test_df]:
-        df.loc[df['age'] < 1900, 'age'] = 1900
-        df['age'] = (df['age'] - context_df['age'].mean()) / context_df['age'].std()
+        df['age'] = df['age'].astype('int')//10 + 1
     
     # map city, state, country to index
     loc_city2idx    = {v:k for k,v in enumerate(context_df['location_city'].unique())}
@@ -41,6 +44,9 @@ def process_gbm_data(users, books, ratings1, ratings2):
     category2idx      = {v:k for k,v in enumerate(context_df['category'].unique())}
     category_high2idx = {v:k for k,v in enumerate(context_df['category_high'].unique())}
     language2idx      = {v:k for k,v in enumerate(context_df['language'].unique())}
+    for lan in language2idx:
+        if lan!='en':
+            language2idx[lan]=1
     author2idx        = {v:k for k,v in enumerate(context_df['book_author'].unique())}
     #title2idx         = {v:k for k,v in enumerate(context_df['book_title'].unique())}
 
@@ -60,7 +66,7 @@ def process_gbm_data(users, books, ratings1, ratings2):
 
     # normalize year of publication
     for df in [train_df, test_df]:
-        df['year_of_publication'] = (df['year_of_publication'] - context_df['year_of_publication'].mean()) / context_df['year_of_publication'].std()
+        df['year_of_publication'] = df['year_of_publication'].astype('int')//5
     
     idx = {
         "loc_city2idx"      : loc_city2idx,
@@ -78,9 +84,12 @@ def process_gbm_data(users, books, ratings1, ratings2):
     return idx, train_df, test_df
 
 
+def split_cold_start(train, test):
+    
+
 def gbm_data_load(args):
     users = pd.read_csv(args.DATA_PATH + 'processed/users.csv')
-    books = pd.read_csv(args.DATA_PATH + 'processed/books.csv')
+    books = pd.read_csv(args.DATA_PATH + 'processed/books_summary.csv')
     train = pd.read_csv(args.DATA_PATH + 'train_ratings.csv')
     test  = pd.read_csv(args.DATA_PATH + 'test_ratings.csv')
     sub   = pd.read_csv(args.DATA_PATH + 'sample_submission.csv')
@@ -88,6 +97,8 @@ def gbm_data_load(args):
     # indexing ids and isbns
     ids      = pd.concat([train['user_id'], sub['user_id']]).unique()
     isbns    = pd.concat([train['isbn'], sub['isbn']]).unique()
+    
+    books.loc[books['summary'].isna(), 'summary']=''
 
     idx2user = {idx:id   for idx, id   in enumerate(ids)}
     idx2isbn = {idx:isbn for idx, isbn in enumerate(isbns)}
@@ -116,10 +127,12 @@ def gbm_data_load(args):
         len(idx['category_high2idx']), 
         len(idx['language2idx'])
     ], dtype=np.uint32)
-
+    
+    
+    
     data = {
         'train':context_train,
-        'test':context_test.drop(['rating'], axis=1),
+        'test':context_test.drop(['rating', 'category'], axis=1),
         'field_dims':field_dims,
         'users':users,
         'books':books,
@@ -134,12 +147,10 @@ def gbm_data_load(args):
 
 
 def gbm_data_split(args, data):
-    X_train, X_valid, y_train, y_valid = train_test_split(data['train'].drop(['rating'], axis=1),
-                                                          data['train']['rating'],
-                                                          test_size=args.TEST_SIZE,
-                                                          random_state=args.SEED,
-                                                          shuffle=True)
-    data['X_train'], data['X_valid'], data['y_train'], data['y_valid'] = X_train, X_valid, y_train, y_valid
+    cv = KFold(n_splits=5, shuffle=True, random_state=args.SEED)
+    data['split']=cv.split(data['train'])
+    data['X']=data['train'].drop(['rating', 'category'], axis=1)
+    data['y']=data['train']['rating']
     return data
 
 
